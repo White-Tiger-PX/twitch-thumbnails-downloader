@@ -2,8 +2,6 @@ import os
 import time
 import requests
 
-from datetime import datetime, timedelta
-
 import config
 
 from set_logger import set_logger
@@ -11,38 +9,7 @@ from init_database import init_database
 from save_thumbnail import save_thumbnail
 from fetch_access_token import fetch_access_token
 from get_twitch_user_id import get_twitch_user_id
-
-
-class CustomError(Exception):
-    pass
-
-
-def get_created_at_local(created_at):
-    try:
-        created_at = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ")
-        created_at_local = created_at + timedelta(hours=config.utc_offset_hours)
-
-        return created_at_local
-    except ValueError as err:
-        logger.error(f"Ошибка преобразования даты: {err}")
-
-        raise CustomError("Ошибка в формате даты.")
-
-
-def create_thumbnail_path(video_data, folder_path, prefix, extension='jpg'):
-    try:
-        datetime_at_local = get_created_at_local(video_data['created_at'])
-        date_created = datetime_at_local.date()
-
-        raw_filename = f"{date_created} - {video_data['id']} - {prefix} - {video_data['user_name']}.{extension}"
-        sanitized_filename = "".join(x for x in raw_filename if x.isalnum() or x in [" ", "-", "_", "."])
-        file_path = os.path.join(folder_path, sanitized_filename)
-
-        return os.path.normpath(file_path)
-    except KeyError as err:
-        raise CustomError(f"Ошибка: отсутствует ключ {err} в данных видео.")
-    except Exception as err:
-        raise Exception(f"Ошибка при создании пути к видео: {err}")
+from create_path import create_path
 
 
 def fetch_videos_and_update_thumbnails(user_id, headers):
@@ -64,11 +31,12 @@ def fetch_videos_and_update_thumbnails(user_id, headers):
 
             if thumbnail_url:
                 user_folder_path = os.path.join(config.folder_path, video_data['user_name'])
-                thumbnail_save_path = create_thumbnail_path(
+                thumbnail_save_path = create_path(
                     video_data,
                     folder_path=user_folder_path,
                     prefix='thumbnail',
-                    extension='jpg'
+                    extension='jpg',
+                    logger=logger
                 )
 
                 os.makedirs(user_folder_path, exist_ok=True)
