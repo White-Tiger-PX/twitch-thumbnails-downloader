@@ -1,4 +1,3 @@
-import os
 import time
 import requests
 
@@ -9,7 +8,7 @@ from init_database import init_database
 from save_thumbnail import save_thumbnail
 from fetch_access_token import fetch_access_token
 from get_twitch_user_id import get_twitch_user_id
-from create_path import create_path
+from utils import get_file_path
 
 
 def fetch_videos_and_update_thumbnails(user_id, headers):
@@ -30,16 +29,7 @@ def fetch_videos_and_update_thumbnails(user_id, headers):
             thumbnail_url = video_data.get('thumbnail_url', None)
 
             if thumbnail_url:
-                user_folder_path = os.path.join(config.folder_path, video_data['user_name'])
-                thumbnail_save_path = create_path(
-                    video_data,
-                    folder_path=user_folder_path,
-                    prefix='thumbnail',
-                    extension='jpg',
-                    logger=logger
-                )
-
-                os.makedirs(user_folder_path, exist_ok=True)
+                thumbnail_save_path = get_file_path(video_data, logger)
 
                 save_thumbnail(thumbnail_url, video_data, thumbnail_save_path, logger)
     except Exception as err:
