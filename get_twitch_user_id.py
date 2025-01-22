@@ -1,6 +1,12 @@
 import sqlite3
 import requests
 
+import config
+
+from set_logger import set_logger
+from init_database import init_database
+from fetch_access_token import fetch_access_token
+
 
 def get_twitch_user_id(database_path, user_name, headers, main_logger):
     """
@@ -54,3 +60,34 @@ def get_twitch_user_id(database_path, user_name, headers, main_logger):
     finally:
         cursor.close()
         conn.close()
+
+
+if __name__ == "__main__":
+    user_input = input("Введите ник пользователя Twitch, чтобы получить его user_id: ")
+
+    logger = set_logger(config.log_folder)
+
+    client_id = config.client_id
+    client_secret = config.client_secret
+
+    access_token = fetch_access_token(
+        client_id=client_id,
+        client_secret=client_secret,
+        logger=logger
+    )
+
+    init_database(
+        database_path=config.database_path,
+        main_logger=logger
+    )
+
+    headers = {"Client-ID": client_id, "Authorization": f"Bearer {access_token}"}
+
+    user_id = get_twitch_user_id(
+        database_path=config.database_path,
+        user_name=user_input,
+        headers=headers,
+        main_logger=logger
+    )
+
+    logger.info("User ID: %s", user_id)
