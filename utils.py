@@ -44,7 +44,7 @@ def create_file_path(folder_path, name_components, extension, logger):
         raise
 
 
-def get_file_path(video_data, logger):
+def get_thumbnail_path(video_data, logger):
     user_folder_path = os.path.join(config.folder_path, video_data['user_name'])
 
     os.makedirs(user_folder_path, exist_ok=True)

@@ -8,7 +8,7 @@ from init_database import init_database
 from save_thumbnail import save_thumbnail
 from fetch_access_token import fetch_access_token
 from get_twitch_user_id import get_twitch_user_id
-from utils import get_file_path
+from utils import get_thumbnail_path
 
 
 def fetch_videos_and_update_thumbnails(user_id, headers):
@@ -29,7 +29,7 @@ def fetch_videos_and_update_thumbnails(user_id, headers):
             thumbnail_url = video_data.get('thumbnail_url', None)
 
             if thumbnail_url:
-                thumbnail_save_path = get_file_path(video_data, logger)
+                thumbnail_save_path = get_thumbnail_path(video_data, logger)
 
                 save_thumbnail(thumbnail_url, video_data, thumbnail_save_path, logger)
     except Exception as err:
