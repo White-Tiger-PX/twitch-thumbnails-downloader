@@ -1,3 +1,4 @@
+import os
 import time
 import requests
 
@@ -8,7 +9,26 @@ from init_database import init_database
 from save_thumbnail import save_thumbnail
 from fetch_access_token import fetch_access_token
 from get_twitch_user_id import get_twitch_user_id
-from utils import get_thumbnail_path
+from utils import get_created_at_local, create_file_path
+
+
+def get_thumbnail_path(video_data):
+    user_folder_path = os.path.join(config.folder_path, video_data['user_name'])
+
+    os.makedirs(user_folder_path, exist_ok=True)
+
+    datetime_at_local = get_created_at_local(video_data['created_at'], logger)
+    date_created = datetime_at_local.date()
+
+    name_components = [date_created, video_data['id'], 'thumbnail', video_data['user_name']]
+    thumbnail_save_path = create_file_path(
+        folder_path=user_folder_path,
+        name_components=name_components,
+        extension='jpg',
+        logger=logger
+    )
+
+    return thumbnail_save_path
 
 
 def fetch_videos_and_update_thumbnails(user_id, headers):
@@ -29,7 +49,7 @@ def fetch_videos_and_update_thumbnails(user_id, headers):
             thumbnail_url = video_data.get('thumbnail_url', None)
 
             if thumbnail_url:
-                thumbnail_save_path = get_thumbnail_path(video_data, logger)
+                thumbnail_save_path = get_thumbnail_path(video_data)
 
                 save_thumbnail(thumbnail_url, video_data, thumbnail_save_path, logger)
     except Exception as err:
@@ -72,6 +92,7 @@ def main():
 
     for user_name in user_names:
         update_user_videos_thumbnails(headers, user_name)
+
         time.sleep(1)  # Соответствуем политике использования API
 
 

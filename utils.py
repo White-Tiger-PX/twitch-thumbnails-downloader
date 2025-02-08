@@ -42,22 +42,3 @@ def create_file_path(folder_path, name_components, extension, logger):
         logger.error(f"Ошибка при создании пути к файлу: {err}")
 
         raise
-
-
-def get_thumbnail_path(video_data, logger):
-    user_folder_path = os.path.join(config.folder_path, video_data['user_name'])
-
-    os.makedirs(user_folder_path, exist_ok=True)
-
-    datetime_at_local = get_created_at_local(video_data['created_at'], logger)
-    date_created = datetime_at_local.date()
-
-    name_components = [date_created, video_data['id'], 'thumbnail', video_data['user_name']]
-    thumbnail_save_path = create_file_path(
-        folder_path=user_folder_path,
-        name_components=name_components,
-        extension='jpg',
-        logger=logger
-    )
-
-    return thumbnail_save_path
