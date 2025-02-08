@@ -5,10 +5,8 @@ import requests
 import config
 
 from set_logger import set_logger
-from init_database import init_database
 from save_thumbnail import save_thumbnail
 from fetch_access_token import fetch_access_token
-from get_twitch_user_id import get_twitch_user_id
 from utils import get_created_at_local, create_file_path
 
 
@@ -19,8 +17,8 @@ def get_thumbnail_path(video_data):
 
     datetime_at_local = get_created_at_local(video_data['created_at'], logger)
     date_created = datetime_at_local.date()
+    name_components = [date_created, video_data['id'], 'thumbnail', video_data['user_name'], video_data['user_id']]
 
-    name_components = [date_created, video_data['id'], 'thumbnail', video_data['user_name']]
     thumbnail_save_path = create_file_path(
         folder_path=user_folder_path,
         name_components=name_components,
@@ -34,12 +32,9 @@ def get_thumbnail_path(video_data):
 def fetch_videos_and_update_thumbnails(user_id, headers):
     """Получает данные о последних видео пользователя и обновляет их обложки."""
     try:
-        # Формируем URL с учетом параметра videos_count из конфига
+        # Формируем URL с учетом параметра max_videos из конфига
         url_videos = f"https://api.twitch.tv/helix/videos?user_id={user_id}&sort=time"
-
-        # Если в конфиге указано значение для количества видео
-        if config.max_videos is not None:
-            url_videos += f"&first={config.max_videos}"
+        url_videos += f"&first={config.max_videos}"
 
         response_videos = requests.get(url_videos, headers=headers, timeout=15)
         response_videos.raise_for_status()
@@ -53,34 +48,11 @@ def fetch_videos_and_update_thumbnails(user_id, headers):
 
                 save_thumbnail(thumbnail_url, video_data, thumbnail_save_path, logger)
     except Exception as err:
-        logger.error(f"Ошибка при получении данных о видео пользователя {user_id}: {err}")
-
-
-def update_user_videos_thumbnails(headers, user_name):
-    try:
-        user_id = get_twitch_user_id(
-            database_path=config.database_path,
-            user_name=user_name,
-            headers=headers,
-            main_logger=logger
-        )
-
-        if user_id:
-            logger.info(f"Обработка видео пользователя {user_name} (ID: {user_id})...")
-            fetch_videos_and_update_thumbnails(user_id, headers)
-        else:
-            logger.error(f"Не удалось получить ID для пользователя {user_name}.")
-    except Exception as err:
-        logger.error(f"Ошибка при обработке видео пользователя {user_name}: {err}")
+        logger.error(f"Ошибка при получении данных о видео пользователя [ {user_id} ]: {err}")
 
 
 def main():
-    logger.info("Программа для обновления обложек видео запущена!")
-
-    init_database(
-        database_path=config.database_path,
-        main_logger=logger
-    )
+    logger.info("Программа для скачивания обложек VOD-ов с Twitch запущена!")
 
     client_id = config.client_id
     client_secret = config.client_secret
@@ -88,10 +60,13 @@ def main():
     access_token = fetch_access_token(client_id, client_secret, logger)
     headers = {"Client-ID": client_id, "Authorization": "Bearer " + access_token}
 
-    user_names = config.user_names
+    user_ids = config.user_ids
 
-    for user_name in user_names:
-        update_user_videos_thumbnails(headers, user_name)
+    for user_id in user_ids:
+        try:
+            fetch_videos_and_update_thumbnails(user_id, headers)
+        except Exception as err:
+            logger.error(f"Ошибка при обработке видео пользователя [ {user_id} ]: {err}")
 
         time.sleep(1)  # Соответствуем политике использования API
 
